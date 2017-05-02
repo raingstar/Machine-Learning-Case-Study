@@ -24,8 +24,12 @@ fetch_hotel_info<-function(df, fetched_cols) {
 
 fetch_user_table_with_newfeature <-function(df){
   
- tmp-> df %>% 
-    select(orderid, uid, starts_with('user')) %>%
+ tmp<- df %>% 
+    select(orderid, orderdate, uid, starts_with('user')) %>%
+    group_by(uid) %>%
+    arrange(desc(orderdate)) %>%
+    slice(1) %>%
+    ungroup() %>%
     mutate(user_roomservice_8_345ratio=user_roomservice_5_345ratio,
            user_roomservice_5_345ratio=NULL,
            user_roomservice_8_2ratio=1-user_roomservice_8_345ratio-user_roomservice_8_1ratio
