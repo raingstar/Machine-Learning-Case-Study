@@ -6,7 +6,7 @@ library(dplyr)
 library(feather)
 
 
-train <- fread("/users/knie/training_new.csv", header=T)    ###Read training set. Fread is good for now.
+train <- fread("~/training_new.csv", header=T)    ###Read training set. Fread is good for now.
 nms = names(train)
 columns_excluded = c('orderid', 'uid', 'orderdate', 'hotelid', 'basicroomid', 'roomid', nms[grep("lastord",nms)])
 training <- train[ ,! names(train) %in% columns_excluded, with=FALSE]
@@ -25,7 +25,7 @@ gc()
 
 
 ######Test set
-test  <- fread("/users/knie/validate_new.csv", header=T) ###Load validate data.
+test  <- fread("~/validate_new.csv", header=T) ###Load validate data.
 testing <- test[ , !nms %in% columns_excluded, with=FALSE]
 test %>% select(orderid, uid, orderdate, hotelid, basicroomid, roomid) ->test
 gc()

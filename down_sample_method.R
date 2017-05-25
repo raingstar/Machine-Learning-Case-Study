@@ -5,7 +5,7 @@ library(data.table)
 library(dplyr)
 library(feather)
 group_id=1   ###global variable, set it from 1 to 10
-train <- fread("/home/knie/data/training_new.csv", header=T)    ###Read training set. Fread is good for now.
+train <- fread("~/training_new.csv", header=T)    ###Read training set. Fread is good for now.
 
 ########down sample negative part, choose only buck_id==group_id or positive sample
 train<- train %>% 
@@ -29,7 +29,7 @@ rm(training)
 gc()
 
 ######Test set
-test  <- fread("/home/knie/data/validate_new.csv", header=T)    ###Load validate data.
+test  <- fread("~/validate_new.csv", header=T)    ###Load validate data.
 testing <- test %>% select_( .dots=nms[!nms %in% columns_excluded]) %>% mutate(buck_id=NULL)
 test %>% select(orderid, uid, orderdate, hotelid, basicroomid, roomid) ->test
 gc()
@@ -95,7 +95,7 @@ ptest<- predict(xgbm, dtest, outputmargin=TRUE,ntreelimit=xgbm$bestInd)
 ######Reload the whole train set to do the prediction
 rm(train, dtrain)
 gc()
-train <- fread("/home/knie/data/training_new.csv", header=T)    ###Read training set. Fread is good for now.
+train <- fread("~/training_new.csv", header=T)    ###Read training set. Fread is good for now.
 training <- train[ ,! names(train) %in% columns_excluded, with=FALSE]
 train %>% select(orderid, uid, orderdate, hotelid, basicroomid, roomid) ->train
 training<-training %>% mutate_each_(funs(as.numeric), names(training))  ##Change all to float type.

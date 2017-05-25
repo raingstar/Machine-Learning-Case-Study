@@ -1,10 +1,10 @@
 rm(list=ls())
 gc()
-source("/home/knie/ML_case_study/Machine-Learning-Case-Study/data_test_engineering.R")
+source("~/Data_engineering.R")
 library(xgboost)
 library(data.table)
 library(dplyr)
-data_test <- fread(file=('/home/knie/data/competition_test.txt'), sep="\t", quote="", na.strings="NULL", header=T)
+data_test <- fread(file=('~/competition_test.txt'), sep="\t", quote="", na.strings="NULL", header=T)
 
 nms = names(data_test)
 columns_excluded = c('orderid', 'uid', 'orderdate', 'hotelid', 'basicroomid', 'roomid', nms[grep("lastord",nms)])

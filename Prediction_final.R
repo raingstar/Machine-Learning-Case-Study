@@ -3,7 +3,7 @@ gc()
 library(xgboost)
 library(data.table)
 library(dplyr)
-data_test <- fread("/home/knie/data/data_test.txt", header=T)    ###Read test set. Fread is good for now.
+data_test <- fread("~/data_test.txt", header=T)    ###Read test set. Fread is good for now.
 
 nms = names(data_test)
 columns_excluded = c('orderid', 'uid', 'orderdate', 'hotelid', 'basicroomid', 'roomid', nms[grep("lastord",nms)])
