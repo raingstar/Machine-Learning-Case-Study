@@ -3,6 +3,12 @@ gc()
 library(xgboost)
 library(data.table)
 library(dplyr)
+<<<<<<< HEAD:Down_sample_predict.R
+=======
+library(feather)
+group_id=1   ###global variable, set it from 1 to 10
+train <- fread("~/training_new.csv", header=T)    ###Read training set. Fread is good for now.
+>>>>>>> fc88cc861e300b5ccde8146c2a753e4ab78aa9d0:down_sample_method.R
 
 train <- fread("~/training_new_sub_1.csv", header=T)    ###Read down sampled training set. Please manually changed it from 1-10.
 nms = names(train)
@@ -21,7 +27,7 @@ rm(training)
 gc()
 
 ######Test set
-test  <- fread("/home/knie/data/validate_new.csv", header=T)    ###Load validate data.
+test  <- fread("~/validate_new.csv", header=T)    ###Load validate data.
 testing <- test %>% select_( .dots=nms[!nms %in% columns_excluded]) %>% mutate(buck_id=NULL)
 test %>% select(orderid, uid, orderdate, hotelid, basicroomid, roomid) ->test
 gc()
@@ -89,7 +95,11 @@ ptest<- predict(xgbm, dtest, outputmargin=TRUE, ntreelimit=xgbm$bestInd) ## It i
 #########Prediction on train (need to reload the whole train set, not train_sub)### 
 rm(train, dtrain)
 gc()
+<<<<<<< HEAD:Down_sample_predict.R
 train <- fread("~/training_new.csv", header=T)    ###Read whole training set. I resue the same parameter name to save efforts
+=======
+train <- fread("~/training_new.csv", header=T)    ###Read training set. Fread is good for now.
+>>>>>>> fc88cc861e300b5ccde8146c2a753e4ab78aa9d0:down_sample_method.R
 training <- train[ ,! names(train) %in% columns_excluded, with=FALSE]
 train %>% select(orderid, uid, orderdate, hotelid, basicroomid, roomid) ->train
 training<-training %>% mutate_each_(funs(as.numeric), names(training))  ##Change all to float type.

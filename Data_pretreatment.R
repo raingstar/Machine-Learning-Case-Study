@@ -1,11 +1,11 @@
 ####Data cleaning####
 rm(list=ls())
 gc()
-source("/home/knie/ML_case_study/Machine-Learning-Case-Study/Data_engineering.R")
+source("~/Machine-Learning-Case-Study/Data_engineering.R")
 library(xgboost)
 library(data.table)
 library(dplyr)
-data<-fread("/Users/knie/Downloads/competition_train.txt", sep="\t", na.strings="NULL", header=T)###, nrows=10000) ##Load original data
+data<-fread("~/competition_train.txt", sep="\t", na.strings="NULL", header=T)###, nrows=10000) ##Load original data
 nms = names(data)
 columns_excluded = c('orderid', 'uid', 'orderdate', 'hotelid', 'basicroomid', 'roomid', nms[grep("lastord",nms)])
 data<- data %>% mutate_each_(funs(as.numeric), nms[! nms %in% columns_excluded]) ##change cols type as numeric

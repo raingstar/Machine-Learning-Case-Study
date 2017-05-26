@@ -214,8 +214,7 @@ feature_clean_rnd2_2 <- function(df)
 ####feature_clean_rnd2_3: Feature generation continued. Using new features when left join with the resutls by feature_clean_rnd2_1 and feature_clean_rnd2_2.  
 feature_clean_rnd2_3 <- function(df)
 {
-  df %>% mutate(buck_id=sample(seq(1,10),1),
-                price_diff_order_min=price_deduct-min_price_order,
+  df %>% mutate(price_diff_order_min=price_deduct-min_price_order,
                 price_diff_order_basic_min=price_deduct-min_price_order_basic,
                 price_diff_user_holiday=price_deduct-user_avgdealpriceholiday,
                 price_diff_user_workday=price_deduct-user_avgdealpriceworkday,
