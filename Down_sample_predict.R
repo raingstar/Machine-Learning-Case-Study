@@ -3,16 +3,8 @@ gc()
 library(xgboost)
 library(data.table)
 library(dplyr)
-library(feather)
-group_id=1   ###global variable, set it from 1 to 10
-train <- fread("/home/knie/data/training_new.csv", header=T)    ###Read training set. Fread is good for now.
 
-########down sample negative part, choose only buck_id==group_id or positive sample
-train<- train %>% 
-       mutate(buck_id=sample(seq(1,10),dim(train)[1],replace = T)) %>%
-       filter((buck_id==group_id & orderlabel==0) | ( orderlabel==1) ) %>%
-       mutate(buck_id=NULL)
-############################################################################
+train <- fread("~/training_new_sub_1.csv", header=T)    ###Read down sampled training set. Please manually changed it from 1-10.
 nms = names(train)
 columns_excluded = c('orderid', 'uid', 'orderdate', 'hotelid', 'basicroomid', 'roomid', nms[grep("lastord",nms)])
 training <- train %>% select_( .dots=nms[!nms %in% columns_excluded])
@@ -75,7 +67,7 @@ evalerror <- function(preds, dtrain) {
 
 ################################xgboost traning##################
 
-xgbm <- xgb.train(
+xgbm <- xgb.train( ##skiped scale_pos_weight
   missing = NA,
   data = dtrain,
   eta = 0.03,
@@ -83,19 +75,21 @@ xgbm <- xgb.train(
   nround=2000,
   subsample = 0.75,
   colsample_bytree = 0.75,
- ## scale_pos_weight = 30, # data skewed, 35:1
   eval_metric = evalerror ###"auc"
   ,objective = logregobj ###"binary:logistic"
   ,watchlist=watchlist
   ,early_stopping_rounds = 200
   ,maximize = TRUE      ####Customized object should set maximize or minimize.
 )
-
-ptest<- predict(xgbm, dtest, outputmargin=TRUE,ntreelimit=xgbm$bestInd)
-######Reload the whole train set to do the prediction
+#######################Save the model, Important !!!!!!##########
+model_name=paste("Model_saved_groupid",group_id,sep = "_")
+xgb.save(xgbm, model_name)
+#######################Prediction on validate set##########
+ptest<- predict(xgbm, dtest, outputmargin=TRUE, ntreelimit=xgbm$bestInd) ## It is actually the validate set
+#########Prediction on train (need to reload the whole train set, not train_sub)### 
 rm(train, dtrain)
 gc()
-train <- fread("/home/knie/data/training_new.csv", header=T)    ###Read training set. Fread is good for now.
+train <- fread("~/training_new.csv", header=T)    ###Read whole training set. I resue the same parameter name to save efforts
 training <- train[ ,! names(train) %in% columns_excluded, with=FALSE]
 train %>% select(orderid, uid, orderdate, hotelid, basicroomid, roomid) ->train
 training<-training %>% mutate_each_(funs(as.numeric), names(training))  ##Change all to float type.
@@ -109,6 +103,33 @@ dtrain = xgb.DMatrix(data=training, label=target_train, missing = NA)
 rm(training)
 gc()
 ptrain<- predict(xgbm, dtrain, outputmargin=TRUE, ntreelimit=xgbm$bestInd)
-
+##################################################################################
+rm(dtrain, dtest, target_test,target_train)
+gc()
+#########################Combine everything togethre######################
 final=data.table(orderid=c(train$orderid, test$orderid),roomid=c(train$roomid,test$roomid ), predicted=c(ptrain,ptest))
 fwrite(final, paste("group_id",group_id,sep = "_") )
+
+######Prediction on whole Test set can be done later !!!!!!!!!################
+######please manually record xgbm$bestInd for each subgroup train set !!!!################
+
+data_test <- fread("/home/knie/data/data_test.txt", header=T)    ###Read test set. Fread is good for now.
+nms = names(data_test)
+columns_excluded = c('orderid', 'uid', 'orderdate', 'hotelid', 'basicroomid', 'roomid', nms[grep("lastord",nms)])
+data_testing <- data_test[ ,!names(data_test) %in% columns_excluded, with=FALSE]
+data_test %>% select(orderid, uid, orderdate, hotelid, basicroomid, roomid) ->data_test
+data_testing<-data_testing %>% mutate_each_(funs(as.numeric), names(data_testing))  ##Change all to float type.
+gc() ## Save memory
+gc()
+data_testing=as.matrix(data_testing)
+gc()
+dtest_final = xgb.DMatrix(data=data_testing, missing = NA)
+rm(data_testing)
+gc()
+xgbm<-xgb.load(model_name)   ### Model_saved_groupid_1 to 10, based on previous groupid=1 - 10
+ptest_final  <- predict(xgbm, dtest_final, outputmargin=TRUE, ntreelimit=xgbm$bestInd)
+final_test=data.table(orderid=data_test$orderid,roomid=data_test$roomid, predicted=ptest_final)
+fwrite(final_test, paste("final_test_group_id",group_id,sep = "_") )
+
+
+
