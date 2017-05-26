@@ -3,13 +3,7 @@ gc()
 library(xgboost)
 library(data.table)
 library(dplyr)
-<<<<<<< HEAD:Down_sample_predict.R
-=======
-library(feather)
-group_id=1   ###global variable, set it from 1 to 10
-train <- fread("~/training_new.csv", header=T)    ###Read training set. Fread is good for now.
->>>>>>> fc88cc861e300b5ccde8146c2a753e4ab78aa9d0:down_sample_method.R
-
+group_id=1
 train <- fread("~/training_new_sub_1.csv", header=T)    ###Read down sampled training set. Please manually changed it from 1-10.
 nms = names(train)
 columns_excluded = c('orderid', 'uid', 'orderdate', 'hotelid', 'basicroomid', 'roomid', nms[grep("lastord",nms)])
@@ -26,7 +20,7 @@ dtrain = xgb.DMatrix(data=training, label=target_train, missing = NA)
 rm(training)
 gc()
 
-######Test set
+######Validate set ####################
 test  <- fread("~/validate_new.csv", header=T)    ###Load validate data.
 testing <- test %>% select_( .dots=nms[!nms %in% columns_excluded]) %>% mutate(buck_id=NULL)
 test %>% select(orderid, uid, orderdate, hotelid, basicroomid, roomid) ->test
@@ -42,6 +36,8 @@ dtest = xgb.DMatrix(data=testing, label= target_test, missing = NA)
 rm(testing)
 gc()
 watchlist <- list(train = dtrain, test = dtest)
+
+
 ###############################User customized objective and error#######
 logregobj <- function(preds, dtrain) {
   labels <- getinfo(dtrain, "label")
@@ -72,7 +68,6 @@ evalerror <- function(preds, dtrain) {
 }
 
 ################################xgboost traning##################
-
 xgbm <- xgb.train( ##skiped scale_pos_weight
   missing = NA,
   data = dtrain,
@@ -87,19 +82,18 @@ xgbm <- xgb.train( ##skiped scale_pos_weight
   ,early_stopping_rounds = 200
   ,maximize = TRUE      ####Customized object should set maximize or minimize.
 )
+
 #######################Save the model, Important !!!!!!##########
 model_name=paste("Model_saved_groupid",group_id,sep = "_")
 xgb.save(xgbm, model_name)
+
 #######################Prediction on validate set##########
 ptest<- predict(xgbm, dtest, outputmargin=TRUE, ntreelimit=xgbm$bestInd) ## It is actually the validate set
+
 #########Prediction on train (need to reload the whole train set, not train_sub)### 
 rm(train, dtrain)
 gc()
-<<<<<<< HEAD:Down_sample_predict.R
 train <- fread("~/training_new.csv", header=T)    ###Read whole training set. I resue the same parameter name to save efforts
-=======
-train <- fread("~/training_new.csv", header=T)    ###Read training set. Fread is good for now.
->>>>>>> fc88cc861e300b5ccde8146c2a753e4ab78aa9d0:down_sample_method.R
 training <- train[ ,! names(train) %in% columns_excluded, with=FALSE]
 train %>% select(orderid, uid, orderdate, hotelid, basicroomid, roomid) ->train
 training<-training %>% mutate_each_(funs(as.numeric), names(training))  ##Change all to float type.
@@ -113,9 +107,12 @@ dtrain = xgb.DMatrix(data=training, label=target_train, missing = NA)
 rm(training)
 gc()
 ptrain<- predict(xgbm, dtrain, outputmargin=TRUE, ntreelimit=xgbm$bestInd)
+
 ##################################################################################
 rm(dtrain, dtest, target_test,target_train)
 gc()
+
+
 #########################Combine everything togethre######################
 final=data.table(orderid=c(train$orderid, test$orderid),roomid=c(train$roomid,test$roomid ), predicted=c(ptrain,ptest))
 fwrite(final, paste("group_id",group_id,sep = "_") )
@@ -123,7 +120,7 @@ fwrite(final, paste("group_id",group_id,sep = "_") )
 ######Prediction on whole Test set can be done later !!!!!!!!!################
 ######please manually record xgbm$bestInd for each subgroup train set !!!!################
 
-data_test <- fread("/home/knie/data/data_test.txt", header=T)    ###Read test set. Fread is good for now.
+data_test <- fread("~/data_test.txt", header=T)    ###Read test set. Fread is good for now.
 nms = names(data_test)
 columns_excluded = c('orderid', 'uid', 'orderdate', 'hotelid', 'basicroomid', 'roomid', nms[grep("lastord",nms)])
 data_testing <- data_test[ ,!names(data_test) %in% columns_excluded, with=FALSE]
