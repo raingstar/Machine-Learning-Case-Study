@@ -2,7 +2,6 @@ rm(list=ls())
 gc()
 library(data.table)
 library(dplyr)
-for i
 
 train <- fread("~/training_new.csv", header=T)    ###Read training set. Fread is good for now.
 
