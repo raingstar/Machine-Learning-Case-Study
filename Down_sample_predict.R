@@ -68,6 +68,7 @@ evalerror <- function(preds, dtrain) {
 }
 
 ################################xgboost traning##################
+set.seed(123)
 xgbm <- xgb.train( ##skiped scale_pos_weight
   missing = NA,
   data = dtrain,

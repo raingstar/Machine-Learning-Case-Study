@@ -69,7 +69,7 @@ evalerror <- function(preds, dtrain) {
 }
 
 ################################xgboost traning##################
-
+set.seed(123)
 xgbm <- xgb.train(
   missing = NA,
   data = dtrain,
