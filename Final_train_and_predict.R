@@ -3,10 +3,8 @@ gc()
 library(xgboost)
 library(data.table)
 library(dplyr)
-library(feather)
+train <- fread("training_new_0608.csv", header=T)    ###Read training set. Fread is good for now.
 
-
-train <- fread("~/training_new.csv", header=T)    ###Read training set. Fread is good for now.
 nms = names(train)
 columns_excluded = c('orderid', 'uid', 'orderdate', 'hotelid', 'basicroomid', 'roomid', nms[grep("lastord",nms)])
 training <- train[ ,! names(train) %in% columns_excluded, with=FALSE]
@@ -19,13 +17,10 @@ gc()
 training=as.matrix(training)
 gc()
 dtrain = xgb.DMatrix(data=training, label=target_train, missing = NA)
-rm(training)
 gc()
 
-
-
 ######Test set
-test  <- fread("~/validate_new.csv", header=T) ###Load validate data.
+test  <- fread("validate_new_0608.csv", header=T) ###Load validate data.
 testing <- test[ , !nms %in% columns_excluded, with=FALSE]
 test %>% select(orderid, uid, orderdate, hotelid, basicroomid, roomid) ->test
 gc()
@@ -37,8 +32,17 @@ gc()
 testing=as.matrix(testing)
 gc()
 dtest = xgb.DMatrix(data=testing, label= target_test, missing = NA)
-rm(testing)
 gc()
+
+
+
+
+
+
+
+
+
+
 watchlist <- list(train = dtrain, test = dtest)
 
 
@@ -75,7 +79,7 @@ xgbm <- xgb.train(
   data = dtrain,
   eta = 0.03,
   max_depth = 8,
-  nround=2000,
+  nround=10000,
   subsample = 0.75,
   colsample_bytree = 0.75,
   scale_pos_weight = 30, # data skewed, 35:1
@@ -86,15 +90,27 @@ xgbm <- xgb.train(
   ,maximize = TRUE      ####Customized object should set maximize or minimize.
 )
 
-xgb.save(xgbm, "Model_saved_with_new_feature") ###Save the model
+xgb.save(xgbm, "Model_0608") ###Save the model
 
 
-xgbm<-xgb.load("Model_saved_with_new_feature")
-xgb.importance(names(training), model = xgbm)
-ptest<- predict(xgbm, dtest, outputmargin=TRUE,ntreelimit=xgbm$bestInd)
-ptrain<- predict(xgbm, dtrain, outputmargin=TRUE,ntreelimit=xgbm$bestInd)
-setinfo(dtrain, "base_margin", ptrain)
-setinfo(dtest, "base_margin", ptest)
+data_test <- fread("data_test_new_0608.csv", header=T)    ###Read test set. Fread is good for now.
 
-xgb.DMatrix.save(dtrain, "dtrain")
-xgb.DMatrix.save(dtest, "dtest")
+nms = names(data_test)
+columns_excluded = c('orderid', 'uid', 'orderdate', 'hotelid', 'basicroomid', 'roomid', nms[grep("lastord",nms)])
+data_testing <- data_test[ ,!names(data_test) %in% columns_excluded, with=FALSE]
+data_test %>% select(orderid, uid, orderdate, hotelid, basicroomid, roomid) ->data_test
+data_testing<-data_testing %>% mutate_each_(funs(as.numeric), names(data_testing))  ##Change all to float type.
+gc() ## Save memory
+gc()
+data_testing=as.matrix(data_testing)
+gc()
+dtest_final = xgb.DMatrix(data=data_testing, missing = NA)
+gc()
+#xgbm<-xgb.load("Model_0608_296feature")
+ptest_final  <- predict(xgbm, dtest_final, outputmargin=TRUE,ntreelimit=xgbm$best_iteration)
+final_test=data.table(orderid=data_test$orderid,roomid=data_test$roomid, predicted=ptest_final)
+final_test=final_test[final_test[, .I[which.max(predicted)], by=orderid]$V1]
+final_test_write=final_test %>% mutate(predicted=NULL)
+final_test_write<- final_test_write %>% mutate(predict_roomid=roomid) %>% select(orderid, predict_roomid)
+fwrite(final_test_write, 'submission_sample_0608.csv')
+
